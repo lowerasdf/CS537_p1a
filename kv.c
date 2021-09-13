@@ -3,19 +3,27 @@
 #include <string.h>
 #include <assert.h>
 
-void main(int argc, char *argv[]) {
-    // read db
-    FILE *file = fopen("database.txt", "r");
-    assert(file != NULL);
+const char *db_name = "database.txt";
 
-    char *line = NULL;
-    size_t linecap = 0;
-    ssize_t linelen;
-    while((linelen = getline(&line, &linecap, file)) > 0) {
-        printf("input: %s\n", line);
+int main(int argc, char *argv[]) {
+    // TODO hash table
+    
+    // read db
+    FILE *file = fopen(db_name, "r");
+    if (file != NULL) {
+        char *line = NULL;
+        size_t linecap = 0;
+        ssize_t linelen;
+        while((linelen = getline(&line, &linecap, file)) > 0) {
+            printf("input: %s", line);
+        }
+        
+        // TODO add to hash table
+
+        fclose(file);
     }
 
-    for(int i = 0; i < argc; i++) {
+    for(int i = 1; i < argc; i++) {
         printf("%s\n", argv[i]);
 
         char *token, *string, *tofree;
@@ -26,13 +34,15 @@ void main(int argc, char *argv[]) {
         while((token = strsep(&string, ",")) != NULL) {
             printf("  token:%s\n", token);
 
-            // check validity
+            // TODO check validity
         }
 
-        free(tofree)
+        free(tofree);
 
-        // if valid do something
+        // TODO if valid do something
     }
 
-    // store db
+    // TODO store db
+    FILE *output_file = fopen(db_name, "w");
+    assert(output_file != NULL);
 }
