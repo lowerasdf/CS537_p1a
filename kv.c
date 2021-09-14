@@ -2,8 +2,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include <ctype.h>
 
 const char *db_name = "database.txt";
+const int save_to_db_when_exit = 1;
 const int hash_capacity = 1000;
 const int buffer_size = 1000;
 const char *arg_put = "p";
@@ -21,9 +23,22 @@ struct Node {
 void printList(struct Node* root) {
     struct Node *curr = root;
     while (curr != NULL) {
-        printf("%d:%s\n", curr->key, curr->val);
+        printf("%d,%s\n", curr->key, curr->val);
         curr = curr->next;
     }
+}
+
+void freeNode(struct Node* node) {
+    free(node->val);
+    free(node);
+}
+
+void freeAll(struct Node* node) {
+    if (node == NULL) {
+        return;
+    }
+    freeAll(node->next);
+    freeNode(node);
 }
 
 void appendOrSet(struct Node** root, int new_key, char *new_val) {
@@ -83,7 +98,7 @@ int deleteNode(struct Node** root, int key) {
  
     if (curr != NULL && curr->key == key) {
         *root = curr->next;
-        free(curr);
+        freeNode(curr);
         return 1;
     }
  
@@ -97,20 +112,24 @@ int deleteNode(struct Node** root, int key) {
     }
  
     prev->next = curr->next;
-    free(curr);
+    freeNode(curr);
     return 1;
-}
-
-void freeAll(struct Node* node) {
-    if (node == NULL) {
-        return;
-    }
-    freeAll(node->next);
-    free(node);
 }
 
 int hash(int key) {
     return key % hash_capacity;
+}
+
+int isNumber(char *s) {
+    if (s[0] == '\0') {
+        return 0;
+    }
+    for (int i = 0; s[i] != '\0'; i++){
+        if (isdigit(s[i]) == 0) {
+            return 0;
+        }
+    }
+    return 1;
 }
 
 int main(int argc, char *argv[]) {
@@ -130,13 +149,13 @@ int main(int argc, char *argv[]) {
             char *token;
             int temp = 0;
             int key;
-            char *val;
+            char *val = malloc((buffer_size + 1) * sizeof(char));
             while((token = strsep(&line, ",")) != NULL) {
                 if (temp == 0) {
                     key = atoi(token);
                 } else if (temp == 1) {
                     token[strcspn(token, "\n")] = 0;
-                    val = token;
+                    strcpy(val, token);
                 }
                 temp += 1;
             }
@@ -155,8 +174,9 @@ int main(int argc, char *argv[]) {
 
         int i = 0;
         int bad_command = 0;
-        char tokens[3][buffer_size];
+        char **tokens = malloc(3 * sizeof(char*));;
         for(int i = 0; i < 3; i++) {
+            tokens[i] = malloc((buffer_size+1) * sizeof(char));
             strcpy(tokens[i], "\0");
         }
         while((token = strsep(&string, ",")) != NULL) {
@@ -173,76 +193,121 @@ int main(int argc, char *argv[]) {
 
         if (bad_command) {
             printf("bad command\n");
+            for(int i = 0; i < 3; i++) {
+                free(tokens[i]);
+            }
+            free(tokens);
             continue;
         }
 
+        // p,key,val
         if(strcmp(tokens[0], arg_put) == 0) {
-            printf("put\n");
-        } else if(strcmp(tokens[0], arg_get) == 0) {
-            printf("get\n");
-        } else if(strcmp(tokens[0], arg_delete) == 0) {
-            printf("delete\n");
-        } else if(strcmp(tokens[0], arg_clear) == 0) {
-            printf("clear\n");
-        } else if(strcmp(tokens[0], arg_all) == 0) {
-            printf("all\n");
-        } else {
-            printf("undefined\n");
+            if (isNumber(tokens[1])) {
+                int key = atoi(tokens[1]);
+                if (strcmp(tokens[2],"\0") != 0) {
+                    int hash_code = hash(key);
+                    char* val = strdup(tokens[2]);
+                    appendOrSet(&hash_table[hash_code], key, val);
+                } else {
+                    bad_command = 1;
+                }
+            } else {
+                bad_command = 1;
+            }
+        } 
+        // g,key
+        else if(strcmp(tokens[0], arg_get) == 0) {
+            if (isNumber(tokens[1])) {
+                int key = atoi(tokens[1]);
+                if (strcmp(tokens[2],"\0") == 0) {
+                    int hash_code = hash(key);
+                    char *val = get(hash_table[hash_code], key);
+                    if (val != NULL) {
+                        printf("%d,%s\n", key, val);
+                    } else {
+                        printf("%d not found\n", key);
+                    }
+                } else {
+                    bad_command = 1;
+                }
+            } else {
+               bad_command = 1; 
+            }
+        }
+        // d,key
+        else if(strcmp(tokens[0], arg_delete) == 0) {
+            if (isNumber(tokens[1])) {
+                int key = atoi(tokens[1]);
+                if (strcmp(tokens[2],"\0") == 0) {
+                    int hash_code = hash(key);
+                    int found = deleteNode(&hash_table[hash_code], key);
+                    if (!found) {
+                        printf("%d not found\n", key);
+                    }
+                } else {
+                    bad_command = 1;
+                }
+            } else {
+               bad_command = 1; 
+            }
+        }
+        // c
+        else if(strcmp(tokens[0], arg_clear) == 0) {
+            if (strcmp(tokens[1],"\0") == 0 && strcmp(tokens[2],"\0") == 0) { 
+                for(int i = 0; i < hash_capacity; i++) {
+                    freeAll(hash_table[i]);
+                    hash_table[i] = NULL;
+                }   
+            } else {
+                bad_command = 1; 
+            }
+        }
+        // a
+        else if(strcmp(tokens[0], arg_all) == 0) {
+            if (strcmp(tokens[1],"\0") == 0 && strcmp(tokens[2],"\0") == 0) { 
+                for(int i = 0; i < hash_capacity; i++) {
+                    printList(hash_table[i]);
+                }   
+            } else {
+                bad_command = 1; 
+            }
+        }
+        // invalid command
+        else {
+            bad_command = 1; 
         }
 
         for(int i = 0; i < 3; i++) {
-            if (strcmp(tokens[i],"\0") != 0) {
-                printf("%s\n", tokens[i]);
-            }
+            free(tokens[i]);
+        }
+        free(tokens);
+
+        if (bad_command) {
+            printf("bad command\n");
+            continue;
         }
     }
 
     // store db
-    FILE *output_file = fopen(db_name, "w");
-    assert(output_file != NULL);
+    if (save_to_db_when_exit) {
+        FILE *output_file = fopen(db_name, "w");
+        assert(output_file != NULL);
 
-    for(int i = 0; i < hash_capacity; i++) {
-        if (hash_table[i] != NULL) {
-            struct Node *curr = hash_table[i];
-            while(curr != NULL) {
-                fprintf(output_file,"%d,%s\n", curr->key, curr->val);                
-                curr = curr->next;
+        for(int i = 0; i < hash_capacity; i++) {
+            if (hash_table[i] != NULL) {
+                struct Node *curr = hash_table[i];
+                while(curr != NULL) {
+                    fprintf(output_file,"%d,%s\n", curr->key, curr->val);                
+                    curr = curr->next;
+                }
             }
         }
-    }
 
-    fclose(output_file);
+        fclose(output_file);
+    }
 
     // free hash table
     for(int i = 0; i < hash_capacity; i++) {
         freeAll(hash_table[i]);
     }
-
-    // struct Node *root = NULL;
-    // appendOrSet(&root, 1, "hello");
-    // appendOrSet(&root, 2, "none");
-    // appendOrSet(&root, 3, "python");
-    // appendOrSet(&root, 2, "yippey");
-    // appendOrSet(&root, 3, "go");
-    // appendOrSet(&root, 4, "nnn");
-    // int found = deleteNode(&root, 2);
-    // assert(found);
-    // printList(root);
-
-    // int keys[] = {1, 3, 2, 4, 1004, 1002};
-    // char *vals[] = {"hello", "none", "python", "go", "java", "c"};
-    // struct Node *hash_table[hash_capacity];
-    // for(int i = 0; i < hash_capacity; i++) {
-    //     hash_table[i] = NULL;
-    // }
-    // for(int i = 0; i < (sizeof keys / sizeof *keys); i++) {
-    //     int hash_code = hash(keys[i]);
-    //     appendOrSet(&hash_table[hash_code], keys[i], vals[i]);
-    // }
-
-    // printList(hash_table[4]);
-    
-    // for(int i = 0; i < hash_capacity; i++) {
-    //     freeAll(hash_table[i]);
-    // }
 }
