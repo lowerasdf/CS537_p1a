@@ -6,6 +6,11 @@
 const char *db_name = "database.txt";
 const int hash_capacity = 1000;
 const int buffer_size = 1000;
+const char *arg_put = "p";
+const char *arg_get = "g";
+const char *arg_delete = "d";
+const char *arg_clear = "c";
+const char *arg_all = "a";
 
 struct Node {
     int key;
@@ -144,21 +149,52 @@ int main(int argc, char *argv[]) {
     }
 
     for(int i = 1; i < argc; i++) {
-        printf("%s\n", argv[i]);
-
         char *token, *string, *tofree;
         tofree = string = strdup(argv[i]);
         assert(string != NULL);
 
+        int i = 0;
+        int bad_command = 0;
+        char tokens[3][buffer_size];
+        for(int i = 0; i < 3; i++) {
+            strcpy(tokens[i], "\0");
+        }
         while((token = strsep(&string, ",")) != NULL) {
-            printf("  token:%s\n", token);
+            if (i >= 3) {
+                bad_command = 1;
+                break;
+            }
 
-            // TODO check validity
+            strcpy(tokens[i], token);
+            i += 1;
         }
 
         free(tofree);
 
-        // TODO if valid do something
+        if (bad_command) {
+            printf("bad command\n");
+            continue;
+        }
+
+        if(strcmp(tokens[0], arg_put) == 0) {
+            printf("put\n");
+        } else if(strcmp(tokens[0], arg_get) == 0) {
+            printf("get\n");
+        } else if(strcmp(tokens[0], arg_delete) == 0) {
+            printf("delete\n");
+        } else if(strcmp(tokens[0], arg_clear) == 0) {
+            printf("clear\n");
+        } else if(strcmp(tokens[0], arg_all) == 0) {
+            printf("all\n");
+        } else {
+            printf("undefined\n");
+        }
+
+        for(int i = 0; i < 3; i++) {
+            if (strcmp(tokens[i],"\0") != 0) {
+                printf("%s\n", tokens[i]);
+            }
+        }
     }
 
     // store db
