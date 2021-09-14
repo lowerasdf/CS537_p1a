@@ -2,10 +2,10 @@
 
 ##### Table of Contents
 * [Installation](#installation)
-* [File System](#filesystem)
-* [Data Structures](#datastructures)
-  * [Hash Table](#hashtable)
-  * [Linked Lists](#linkedlists)
+* [File System](#file-system)
+* [Data Structures](#data-structures)
+  * [Hash Table](#hash-table)
+  * [Linked Lists](#linked-lists)
 
 ## Installation
 To compile and run the program, run:
