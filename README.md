@@ -6,6 +6,7 @@
 * [Data Structures](#data-structures)
   * [Hash Table](#hash-table)
   * [Linked Lists](#linked-lists)
+* [Acknowledgement](#acknowledgement)
 
 ## Installation
 To compile and run the program, run:
@@ -30,3 +31,6 @@ The hash function is simple: it takes the modulo of the given key by the pre-def
 
 #### Linked Lists
 A single linked list node represents a key-value pair where each value is dynamically allocated. Each node is also dynamically allocated.
+
+## Acknowledgement
+This is an assignment for a class [Comp Sci. 537: Introduction to Operating Systems](https://pages.cs.wisc.edu/~remzi/Classes/537/Fall2021/) by [Remzi Arpaci-Dusseau](https://pages.cs.wisc.edu/~remzi/). Please refer to [this repo](https://github.com/remzi-arpacidusseau/ostep-projects/tree/master/initial-kv) for more details about the assignment.
